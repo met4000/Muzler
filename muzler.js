@@ -37,11 +37,25 @@ muzler.classes.PhysicsInput = function () {
 
 	//User callable functions
 	this.add = {};
-	this.add.object = function (obj) { /* append to objectList */ };
+	this.add.p = this; //Passing parent... DEFINATELY NOT BAD PRACTICE
+	this.add.object = function (obj) {
+		if (!(obj instanceof muzler.object)) {
+			muzler.out.error("Passed object not of type 'muzler.object'. Object: " + JSON.stringify(obj));
+			return false;
+		}
+		this.p.objectList.push(obj);
+		return obj.id;
+	};
+};
+
+Array.prototype.idIndex = function (id) {
+	return this.indexOf(this.find(new Function("e", "return e.id == " + id)));
 };
 
 //TODO
-muzler.object = function () {
+muzler.object = function (id) {
+	this.id = id == undefined ? Math.floor(Math.random() * 1000000) : id;
+
 	this.dx = 50; //DEFAULT
 	this.dy = 50; //DEFAULT
 	this.imgSrc = "black"; //DEFAULT
