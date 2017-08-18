@@ -59,6 +59,8 @@ muzler.object = function (id) {
 	this.dx = 50; //DEFAULT
 	this.dy = 50; //DEFAULT
 	this.imgSrc = "black"; //DEFAULT
+
+	this.physics = new muzler.PhysicsEngine();
 };
 
 
@@ -91,6 +93,24 @@ muzler.out._base = function (m, t) {
 //Load console logging types from _rel{}, incorporating _base()
 for (var i = 0; i < Object.keys(muzler.out._rel).length; i++)
 	muzler.out[Object.keys(muzler.out._rel)[i]] = eval("(function (m) { muzler.out._base(m, '" + Object.keys(muzler.out._rel)[i] + "'); })");
+
+//Contains physics functions and attributes used by objects when ticking
+muzler.PhysicsEngine = function () {
+	//Physics relaed stats. All are in SI
+	this.stats = {};
+	this.stats.mass = 100; //DEFAULT
+
+	//Multipliers to manualy adjust certain physics
+	this.multipliers = {};
+	this.multipliers.gravity = 1; //DEFAULT
+	this.multipliers.aero = 1; //DEFAULT
+
+	//What do you think?
+	this.gravity = {};
+
+	this.gravity.type = 0; //DEFAULT
+	this.gravity.direction = 180; //DEFAULT
+};
 
 //Function called at or after window.load
 //mio: a muzler init object
