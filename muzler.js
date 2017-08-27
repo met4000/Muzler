@@ -140,6 +140,7 @@ muzler.classes.PhysicsEngine = function () {
 	//Physics relaed stats. All are in SI
 	this.stats = {};
 	this.stats.mass = 100; //DEFAULT
+	this.stats.type = ""; //DEFAULT - similar to 'class'. Used to apply group reaction rules. To set multiple types, leave a space in between them
 
 	//Multipliers to manualy adjust certain physics
 	this.multipliers = {};
@@ -276,9 +277,6 @@ muzler.globalTick = function () {
 				if (objs[i].physics.gravity.direction != -1)
 					objs[i].physics.force(muzler.data.engine.gravity.tps() * objs[i].physics.multipliers.gravity, objs[i].physics.gravity.direction, "gravity");
 				
-				//Clear all gravity
-				//objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; });
-				
 				//Calc
 				var dx = 0;
 				var dy = 0;
@@ -302,8 +300,33 @@ muzler.globalTick = function () {
 					}
 				}
 				
-				objs[i].e.style.top = parseInt(objs[i].e.style.top.substr(0, objs[i].e.style.top.length-2))+Math.round(dy*muzler.data.engine.scale)+"px";
-				objs[i].e.style.left = parseInt(objs[i].e.style.left.substr(0, objs[i].e.style.left.length-2))+Math.round(dx*muzler.data.engine.scale)+"px";
+				//Collisions
+				var cx = parseInt(objs[i].e.style.left.substr(0, objs[i].e.style.left.length - 2));
+				var cy = parseInt(objs[i].e.style.top.substr(0, objs[i].e.style.top.length - 2));
+				for (var x = cx; Math.abs(cx - x) <= Math.ceil(Math.abs(dx)); x += Math.abs(dx) / dx) {
+					for (var y = cy; Math.abs(cy - y) <= Math.ceil(Math.abs(dy)); y += Math.abs(dy) / dy) {
+						for (var n = 0; n < objs.length; n++) {
+							if (i != n) {
+								if (objs[n].x < x && x < objs[n].x + objs[n].dx) {
+									if (objs[n].y < y && y < objs[n].y + objs[n].dy) {
+										//COLLISION
+									}
+								}
+							}
+						}
+						if (0 > x || x > parseInt(muzler.data.width)) {
+							//COLLISION WITH WALL
+						} else if (0 > y) {
+							//COLLISION WITH ROOF
+						} else if (y > parseInt(muzler.data.height)) {
+							//COLLISION WITH FLOOR
+							dy = y - Math.abs(dy) / dy;
+							objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; });
+						}
+					}
+				}
+				objs[i].e.style.top = cy + Math.round(dy * muzler.data.engine.scale) + "px";
+				objs[i].e.style.left = cx + Math.round(dx * muzler.data.engine.scale) + "px";
 			}
 		}
 		
