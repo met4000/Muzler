@@ -215,9 +215,9 @@ muzler.init = function (mio) {
 	
 	muzler.out.load("Setting up designated element...");
 	try {
-		muzler.out.sub("Accessing element");
+		muzler.out.sub("Accessing element...");
 		muzler.element = eval(muzler.data.element);
-		muzler.out.sub("Setting style");
+		muzler.out.sub("Setting style...");
 		muzler.element.style.width = muzler.width;
 		muzler.element.style.height = muzler.height;
 		muzler.element.style.position = "relative";
@@ -228,7 +228,7 @@ muzler.init = function (mio) {
 		muzler.globalTickPort = setInterval("muzler.globalTick()", muzler.globalTickTime);
 		
 		if (muzler.globalTickPort != -1) {
-			muzler.out.sub("Global tick successfully iniialised on port " + muzler.globalTickPort + ".");
+			muzler.out.sub("Global tick successfully initialised on port " + muzler.globalTickPort + ".");
 			muzler.out.sub("Global tick operating at " + Math.floor(10000 / muzler.globalTickTime) / 10 + "Hz - " + muzler.globalTickTime + "msec.");
 		} else
 			muzler.out.fatal("Failed to initialise global tick. Reason Unknown.");
@@ -270,68 +270,83 @@ muzler.globalTick = function () {
 				
 				//PostDestroy trigger
 				objs[i].funcTriggerEvent("postDestroy");
-			} else {
-				objs[i].funcTriggerEvent("preTick");
-				
-				//Gravity
-				if (objs[i].physics.gravity.direction != -1)
-					objs[i].physics.force(muzler.data.engine.gravity.tps() * objs[i].physics.multipliers.gravity, objs[i].physics.gravity.direction, "gravity");
-				
-				//Calc
-				var dx = 0;
-				var dy = 0;
-				for (var n = 0; n < objs[i].physics.forces.length; n++) {
-					if (objs[i].physics.forces[n] instanceof muzler.classes.Force) {
-						var nm = objs[i].physics.forces[n].strength;
-						var nd = objs[i].physics.forces[n].direction.toRad();
-						dx += Math.floor(nm * Math.sin(nd) * 1000) / 1000;
-						dy += Math.floor(nm * Math.cos(nd) * 1000) / 1000;
-					}
-				}
-				
-				var d = Math.atan2(dx, dy);
-				var m = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-				for (var n = 0; n < objs[i].physics.forces.length; n++) {
-					if (objs[i].physics.forces[n] instanceof muzler.classes.VForce) {
-						var nm = Math.round(objs[i].physics.forces[n].func(m, d) * 1000) / 1000;
-						var nd = objs[i].physics.forces[n].direction.toRad();
-						dx += Math.floor(nm * Math.sin(nd) * 1000) / 1000;
-						dy += Math.floor(nm * Math.cos(nd) * 1000) / 1000;
-					}
-				}
-				
-				//Collisions
-				var cx = parseInt(objs[i].e.style.left.substr(0, objs[i].e.style.left.length - 2));
-				var cy = parseInt(objs[i].e.style.top.substr(0, objs[i].e.style.top.length - 2));
-				for (var x = cx; Math.abs(cx - x) <= Math.ceil(Math.abs(dx)); x += Math.abs(dx) / dx) {
-					for (var y = cy; Math.abs(cy - y) <= Math.ceil(Math.abs(dy)); y += Math.abs(dy) / dy) {
-						for (var n = 0; n < objs.length; n++) {
-							if (i != n) {
-								if (objs[n].x < x && x < objs[n].x + objs[n].dx) {
-									if (objs[n].y < y && y < objs[n].y + objs[n].dy) {
-										//COLLISION
-									}
-								}
-							}
-						}
-						if (0 > x || x > parseInt(muzler.data.width)) {
-							//COLLISION WITH WALL
-						} else if (0 > y) {
-							//COLLISION WITH ROOF
-						} else if (y > parseInt(muzler.data.height)) {
-							//COLLISION WITH FLOOR
-							dy = y - Math.abs(dy) / dy;
-							objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; });
-						}
-					}
-				}
-				objs[i].e.style.top = cy + Math.round(dy * muzler.data.engine.scale) + "px";
-				objs[i].e.style.left = cx + Math.round(dx * muzler.data.engine.scale) + "px";
 			}
 		}
 		
 		//Remove destroyed objects from the object list
 		muzler.data.engine.objectList = objs.filter(new Function ("e", "return ![" + delArr + "].includes(e.id);"));
+		
+		for (var i = 0; i < objs.length; i++) {
+			objs[i].funcTriggerEvent("preTick");
+
+			//Gravity
+			if (objs[i].physics.gravity.direction != -1)
+				objs[i].physics.force(muzler.data.engine.gravity.tps() * objs[i].physics.multipliers.gravity, objs[i].physics.gravity.direction, "gravity");
+
+			//Calc
+			var dx = 0;
+			var dy = 0;
+			for (var n = 0; n < objs[i].physics.forces.length; n++) {
+				if (objs[i].physics.forces[n] instanceof muzler.classes.Force) {
+					var nm = objs[i].physics.forces[n].strength;
+					var nd = objs[i].physics.forces[n].direction.toRad();
+					dx += Math.floor(nm * Math.sin(nd) * 1000) / 1000;
+					dy += Math.floor(nm * Math.cos(nd) * 1000) / 1000;
+				}
+			}
+
+			var d = Math.atan2(dx, dy);
+			var m = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+			for (var n = 0; n < objs[i].physics.forces.length; n++) {
+				if (objs[i].physics.forces[n] instanceof muzler.classes.VForce) {
+					var nm = Math.round(objs[i].physics.forces[n].func(m, d) * 1000) / 1000;
+					var nd = objs[i].physics.forces[n].direction.toRad();
+					dx += Math.floor(nm * Math.sin(nd) * 1000) / 1000;
+					dy += Math.floor(nm * Math.cos(nd) * 1000) / 1000;
+				}
+			}
+
+			//Collisions
+			var cx = parseInt(objs[i].e.style.left.substr(0, objs[i].e.style.left.length - 2));
+			var cy = parseInt(objs[i].e.style.top.substr(0, objs[i].e.style.top.length - 2));
+			var b = false;
+			for (var x = cx; Math.abs(cx - x) <= Math.ceil(Math.abs(dx * muzler.data.engine.scale)) && !b; x += Math.abs(dx) / dx) {
+				for (var y = cy; Math.abs(cy - y) <= Math.ceil(Math.abs(dy * muzler.data.engine.scale)) && !b; y += Math.abs(dy) / dy) {
+					for (var n = 0; n < objs.length; n++) {
+						if (i != n) {
+							if (objs[n].x <= x + objs[i].dx && x <= objs[n].x + objs[n].dx) {
+								if objs[n].y <= y + objs[i].dy && y <= objs[n].y + objs[n].dy) {
+									//COLLISION WITH OBJECT
+									//NOT CORRECT TRIGGER - NEEDS FIXING
+									
+									//Break
+									//b = true;
+								}
+							}
+						}
+					}
+					if (0 >= x || x + objs[i].dx >= parseInt(muzler.data.width)) {
+						//COLLISION WITH WALL
+
+						b = true;
+					} else if (0 >= y) {
+						//COLLISION WITH ROOF
+
+						b = true;
+					} else if (y + objs[i].dy >= parseInt(muzler.data.height)) {
+						//COLLISION WITH FLOOR
+						dy = Math.abs(cy - y) / muzler.data.engine.scale;
+						objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; }); //PLACEHOLDER - NEED TO REDIRECT FORCES OR BOUNCE, ETC
+						
+						b = true;
+					}
+				}
+			}
+			objs[i].y = cy + Math.round(dy * muzler.data.engine.scale) + "px";
+			objs[i].x = cx + Math.round(dx * muzler.data.engine.scale) + "px";
+			objs[i].e.style.top = objs[i].y;
+			objs[i].e.style.left = objs[i].x;
+		}
 	}
 };
 
