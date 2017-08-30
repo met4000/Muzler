@@ -73,7 +73,7 @@ muzler.classes.PhysicsInput = function () {
 			return false;
 		}
 		this.p.objectList.push(obj);
-		return obj.id;
+		return obj;
 	};
 };
 
@@ -81,7 +81,6 @@ Array.prototype.idIndex = function (id) {
 	return this.indexOf(this.find(new Function("e", "return e.id == " + id)));
 };
 
-//TODO
 muzler.Object = function (id) {
 	//_PRIVATE_
 	this._del = false;
@@ -91,7 +90,6 @@ muzler.Object = function (id) {
 	
 	this.x = 50;
 	this.y = 50;
-	this.r = 0;
 
 	this.dx = 25; //DEFAULT
 	this.dy = 25; //DEFAULT
@@ -137,7 +135,7 @@ for (var i = 0; i < Object.keys(muzler.out._rel).length; i++)
 
 //Contains physics functions and attributes used by objects when ticking
 muzler.classes.PhysicsEngine = function () {
-	//Physics relaed stats. All are in SI
+	//Physics related stats. All are in SI
 	this.stats = {};
 	this.stats.mass = 100; //DEFAULT
 	this.stats.type = ""; //DEFAULT - similar to 'class'. Used to apply group reaction rules. To set multiple types, leave a space in between them
@@ -218,8 +216,8 @@ muzler.init = function (mio) {
 		muzler.out.sub("Accessing element...");
 		muzler.element = eval(muzler.data.element);
 		muzler.out.sub("Setting style...");
-		muzler.element.style.width = muzler.width;
-		muzler.element.style.height = muzler.height;
+		muzler.element.style.width = muzler.data.width + "px";
+		muzler.element.style.height = muzler.data.height + "px";
 		muzler.element.style.position = "relative";
 	} catch (err) { muzler.out.error("Failed to set up designated element: '" + err + "'"); }
 	
@@ -251,10 +249,10 @@ muzler.globalTick = function () {
 				o = document.createElement("span");
 				o.id = objs[i].id;
 				o.style.position = "absolute";
-				o.style.width = objs[i].dx;
-				o.style.height = objs[i].dy;
-				o.style.top = objs[i].y;
-				o.style.left = objs[i].x;
+				o.style.width = objs[i].dx + "px";
+				o.style.height = objs[i].dy + "px";
+				o.style.top = objs[i].y + "px";
+				o.style.left = objs[i].x + "px";
 				o.style.background = objs[i].imgSrc;
 				muzler.element.appendChild(o);
 				objs[i].e = o;
@@ -307,21 +305,18 @@ muzler.globalTick = function () {
 			}
 
 			//Collisions
-			var cx = parseInt(objs[i].e.style.left.substr(0, objs[i].e.style.left.length - 2));
-			var cy = parseInt(objs[i].e.style.top.substr(0, objs[i].e.style.top.length - 2));
 			var b = false;
-			for (var x = cx; Math.abs(cx - x) <= Math.ceil(Math.abs(dx * muzler.data.engine.scale)) && !b; x += Math.abs(dx) / dx) {
-				for (var y = cy; Math.abs(cy - y) <= Math.ceil(Math.abs(dy * muzler.data.engine.scale)) && !b; y += Math.abs(dy) / dy) {
+			for (var x = objs[i].x; Math.abs(objs[i].x - x) <= Math.ceil(Math.abs(dx * muzler.data.engine.scale)) && !b; x += Math.abs(dx) / dx) {
+				for (var y = objs[i].y; Math.abs(objs[i].y - y) <= Math.ceil(Math.abs(dy * muzler.data.engine.scale)) && !b; y += Math.abs(dy) / dy) {
 					for (var n = 0; n < objs.length; n++) {
 						if (i != n) {
-							if (objs[n].x <= x + objs[i].dx && x <= objs[n].x + objs[n].dx) {
-								if objs[n].y <= y + objs[i].dy && y <= objs[n].y + objs[n].dy) {
-									//COLLISION WITH OBJECT
-									//NOT CORRECT TRIGGER - NEEDS FIXING
-									
-									//Break
-									//b = true;
-								}
+							if (((x <= objs[n].x + objs[n].dx && x >= objs[n].x) || (x + objs[i].dx >= objs[n].x && x + objs[i].dx <= objs[n].x + objs[n].dx))
+									&& ((y <= objs[n].y + objs[n].dy && y >= objs[n].y) || (y + objs[i].dy >= objs[n].y && y + objs[i].dy <= objs[n].y + objs[n].dy))) {
+								//COLLISION WITH ANOTHER OBJECT
+								dy = Math.abs(objs[i].y - y) / muzler.data.engine.scale;
+								objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; });
+								
+								b = true;
 							}
 						}
 					}
@@ -335,17 +330,17 @@ muzler.globalTick = function () {
 						b = true;
 					} else if (y + objs[i].dy >= parseInt(muzler.data.height)) {
 						//COLLISION WITH FLOOR
-						dy = Math.abs(cy - y) / muzler.data.engine.scale;
+						dy = Math.abs(objs[i].y - y) / muzler.data.engine.scale;
 						objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; }); //PLACEHOLDER - NEED TO REDIRECT FORCES OR BOUNCE, ETC
 						
 						b = true;
 					}
 				}
 			}
-			objs[i].y = cy + Math.round(dy * muzler.data.engine.scale) + "px";
-			objs[i].x = cx + Math.round(dx * muzler.data.engine.scale) + "px";
-			objs[i].e.style.top = objs[i].y;
-			objs[i].e.style.left = objs[i].x;
+			objs[i].y += Math.round(dy * muzler.data.engine.scale);
+			objs[i].x += Math.round(dx * muzler.data.engine.scale);
+			objs[i].e.style.top = objs[i].y + "px";
+			objs[i].e.style.left = objs[i].x + "px";
 		}
 	}
 };
