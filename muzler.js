@@ -182,6 +182,38 @@ muzler.classes.FunctionHandler = function () {
 	//Tick
 	this.preTick = [];
 	this.postTick = []; //Not in place yet
+	
+	//Gravity
+	this.preGravity = [];
+	this.gravityDefault = true;
+	this.postGravity = [];
+	
+	//Collision
+	this.collideFloor = [];
+	this.collideFloorDefault = true;
+	this.collideLeft = [];
+	this.collideLeftDefault = true;
+	this.collideRight = [];
+	this.collideRightDefault = true;
+	this.collideRoof = [];
+	this.collideRoofDefault = true;
+	this.collideObject = [];
+	this.collideObjectDefault = true;
+};
+
+muzler.funcs.bounce = function (o) {
+	alert();
+	var gravList = o.physics.forces.filter(function (f) { return f.name == "gravity"; });
+	var bounceList = o.physics.forces.filter(function (f) { return f.name == "bounce"; });
+	if (gravList.length > 0) {
+		var bounceConstant = 0.6; //% of gravity transfered into bounce
+		var bounceForce = 0;
+		for (var i = 0; i < gravList.length; i++)
+			bounceForce += gravList[i].strength;
+		o.physics.force(bounceForce * bounceConstant * (bounceList.length > 0 ? 0.5 : 1), (gravList[0].direction + 180) % 360, "bounce");
+	}
+	if (bounceList.length)
+		o.physics.forces = o.physics.forces.filter(function (f) { return f.name != "bounce"; });
 };
 
 //Used to trigger objects' event functions
@@ -278,8 +310,10 @@ muzler.globalTick = function () {
 			objs[i].funcTriggerEvent("preTick");
 
 			//Gravity
-			if (objs[i].physics.gravity.direction != -1)
+			objs[i].funcTriggerEvent("preGravity");
+			if (objs[i].physics.gravity.direction != -1 && objs[i].functions.gravityDefault)
 				objs[i].physics.force(muzler.data.engine.gravity.tps() * objs[i].physics.multipliers.gravity, objs[i].physics.gravity.direction, "gravity");
+			objs[i].funcTriggerEvent("postGravity");
 
 			//Calc
 			var dx = 0;
@@ -313,25 +347,39 @@ muzler.globalTick = function () {
 							if (((x <= objs[n].x + objs[n].dx && x >= objs[n].x) || (x + objs[i].dx >= objs[n].x && x + objs[i].dx <= objs[n].x + objs[n].dx))
 									&& ((y <= objs[n].y + objs[n].dy && y >= objs[n].y) || (y + objs[i].dy >= objs[n].y && y + objs[i].dy <= objs[n].y + objs[n].dy))) {
 								//COLLISION WITH ANOTHER OBJECT
-								dy = Math.abs(objs[i].y - y) / muzler.data.engine.scale;
-								objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; });
+								if (objs[i].functions.collideObjectDefault) {
+									dy = Math.abs(objs[i].y - y) / muzler.data.engine.scale;
+									objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; });
+								}
+								objs[i].funcTriggerEvent("collideObject");
 								
 								b = true;
 							}
 						}
 					}
-					if (0 >= x || x + objs[i].dx >= parseInt(muzler.data.width)) {
-						//COLLISION WITH WALL
+					if (0 >= x) {
+						//COLLISION WITH LEFT WALL
+						objs[i].funcTriggerEvent("collideLeft");
+						
+						b = true;
+					} if (x + objs[i].dx >= parseInt(muzler.data.width)) {
+						//COLLISION WITH RIGHT WALL
+						objs[i].funcTriggerEvent("collideRight");
 
 						b = true;
 					} else if (0 >= y) {
 						//COLLISION WITH ROOF
+						objs[i].funcTriggerEvent("collideRoof");
 
 						b = true;
 					} else if (y + objs[i].dy >= parseInt(muzler.data.height)) {
 						//COLLISION WITH FLOOR
-						dy = Math.abs(objs[i].y - y) / muzler.data.engine.scale;
-						objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; }); //PLACEHOLDER - NEED TO REDIRECT FORCES OR BOUNCE, ETC
+						objs[i].funcTriggerEvent("collideFloor");
+						if (objs[i].functions.collideFloorDefault) {
+							if (dy > 0)
+								dy = Math.abs(objs[i].y - y) / muzler.data.engine.scale;
+							objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; }); //PLACEHOLDER - NEED TO REDIRECT FORCES OR BOUNCE, ETC
+						}
 						
 						b = true;
 					}
