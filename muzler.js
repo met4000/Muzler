@@ -202,18 +202,20 @@ muzler.classes.FunctionHandler = function () {
 };
 
 muzler.funcs.bounce = function (o) {
-	alert();
-	var gravList = o.physics.forces.filter(function (f) { return f.name == "gravity"; });
-	var bounceList = o.physics.forces.filter(function (f) { return f.name == "bounce"; });
-	if (gravList.length > 0) {
-		var bounceConstant = 0.6; //% of gravity transfered into bounce
-		var bounceForce = 0;
-		for (var i = 0; i < gravList.length; i++)
-			bounceForce += gravList[i].strength;
-		o.physics.force(bounceForce * bounceConstant * (bounceList.length > 0 ? 0.5 : 1), (gravList[0].direction + 180) % 360, "bounce");
-	}
-	if (bounceList.length)
+	if (!muzler.gravList) muzler.gravList = [];
+	if (o.y + o.dy != muzler.data.height) {
+		muzler.gravList[o.id] = o.physics.forces.filter(function (f) { return f.name == "gravity"; });
+	} else {
+		var bounce = o.physics.forces.some(function (f) { return f.name == "bounce"; });
 		o.physics.forces = o.physics.forces.filter(function (f) { return f.name != "bounce"; });
+		if (muzler.gravList[o.id].length > 0) {
+			var bounceConstant = 0.75; //% of gravity transfered into bounce
+			var bounceForce = 0;
+			for (var i = 0; i < muzler.gravList[o.id].length; i++)
+				bounceForce += muzler.gravList[o.id][i].strength;
+			o.physics.force(bounceForce * bounceConstant * (bounce ? 0.5 : 1), (muzler.gravList[o.id][0].direction + 180) % 360, "bounce");
+		}
+	}
 };
 
 //Used to trigger objects' event functions
@@ -311,7 +313,7 @@ muzler.globalTick = function () {
 
 			//Gravity
 			objs[i].funcTriggerEvent("preGravity");
-			if (objs[i].physics.gravity.direction != -1 && objs[i].functions.gravityDefault)
+			if (objs[i].functions.gravityDefault)
 				objs[i].physics.force(muzler.data.engine.gravity.tps() * objs[i].physics.multipliers.gravity, objs[i].physics.gravity.direction, "gravity");
 			objs[i].funcTriggerEvent("postGravity");
 
@@ -375,11 +377,12 @@ muzler.globalTick = function () {
 					} else if (y + objs[i].dy >= parseInt(muzler.data.height)) {
 						//COLLISION WITH FLOOR
 						objs[i].funcTriggerEvent("collideFloor");
-						if (objs[i].functions.collideFloorDefault) {
-							if (dy > 0)
+						
+						if (dy > 0)
 								dy = Math.abs(objs[i].y - y) / muzler.data.engine.scale;
-							objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; }); //PLACEHOLDER - NEED TO REDIRECT FORCES OR BOUNCE, ETC
-						}
+						
+						if (objs[i].functions.collideFloorDefault)
+							objs[i].physics.forces = objs[i].physics.forces.filter(function (f) { return f.name != "gravity"; }); //Remove gravity forces - TEMP?
 						
 						b = true;
 					}
